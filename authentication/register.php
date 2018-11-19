@@ -8,11 +8,12 @@ require_once('db_connect.php');
 $errors = [];
 if (isset($_POST['submit'])){
 
-    if (!$pilotId) {
-        $errors[] = 'Please select a pilot.';
+    if(!isset($_POST['firstName'])) {
+        $errors[] = 'Please enter a first name.';
     }
-
-    // TODO:  Add validation errors to the $errors[] array.
+    if(!isset($_POST['lastName'])) {
+        $errors[] = 'Please enter last name.';
+    }
     if(!isset($_POST['email'])) {
         $errors[] = 'Please enter an email.';
     }
@@ -22,7 +23,7 @@ if (isset($_POST['submit'])){
     if(!isset($_POST['confirmPassword'])) {
         $errors[] = 'Please enter a password.';
     }
-    if(($_POST['password']) === ($_POST['confirmPassword']) ) {
+    if(!(($_POST['password']) == ($_POST['confirmPassword']))) {
         $errors[] = 'Password must match confirmation password.';
     }
 
@@ -32,22 +33,25 @@ if (isset($_POST['submit'])){
 
         // auto generate salt
         $salt = random_bytes(12);
+        // sanitize input
+        $firstName = mysqli_real_escape_string($connection, trim($_POST['firstName']));
+        $lastName = mysqli_real_escape_string($connection, trim($_POST['lastName']));
+        $email = mysqli_real_escape_string($connection, trim($_POST['email']));
+        $password = mysqli_real_escape_string($connection, trim($_POST['password']));
 
-        // TODO: Sanitize the model and registration number fields, just like we did with the pilotId above.
-        $model = mysqli_real_escape_string($connection, trim($_POST['model']));
-        $registrationNumber = mysqli_real_escape_string($connection, trim($_POST['registrationNumber']));
+        // create sql statement
+        $sql = "INSERT INTO users (user_id, first_name, last_name, email, password, salt) 
+                VALUES ('$firstName', '$lastName', '$email', '$password' , '$salt')";
 
-        // TODO: Write an INSERT SQL statement to add the new aircraft to the database.
-        // Ensure that it is assigned to the correct pilot by including the pilotId.
-        $sql = "INSERT INTO authentication (pilot_id, registration_number, model) VALUES ('$pilotId', '$registrationNumber', '$model')";
-
-        // TODO: Use mysqli_query to send the SQL query to the MySQL database server.
+        // insert to authentication table
         $results = mysqli_query($connection, $sql);
+        var_dump($results);
+        // if success -> redirect
+        if($results) {
+            header('location: /authentication/login.php');
+            die;
+        }
 
-
-        // Redirect to the pilot-detail.php page, for the pilot that we just added the aircraft to.
-        header('location: /authentication/login.php');
-        die;
     }
 }
 ?>
@@ -56,13 +60,11 @@ if (isset($_POST['submit'])){
 <head>
     <meta charset="UTF-8">
     <title>Authentication Registration Page</title>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>Register</h1>
-
-<!-- TODO: Display validation errors in an unordered list. -->
 <?php
+// show errors:
 if (isset($_POST['submit'])) {
     if (count($errors) > 0) {
         echo "<h2><font color='red'>You have errors!</font></h2><ul>";
@@ -74,7 +76,6 @@ if (isset($_POST['submit'])) {
 }
 
 ?>
-
 <form method="post">
     <div class="form-group">
         <label for="firstName">First Name</label>
@@ -109,12 +110,14 @@ if (isset($_POST['submit'])) {
 
     <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" name="password" id="password">
+        <input type="password" name="password" id="password"
+               value="<?php if (isset($_POST['password'])) echo $_POST['password']; ?>">
     </div>
 
     <div class="form-group">
-        <label for="email">Confirm Password</label>
-        <input type="password" name="confirmPassword" id="confirmPassword">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" name="confirmPassword" id="confirmPassword"
+               value="<?php if (isset($_POST['confirmPassword'])) echo $_POST['confirmPassword']; ?>">
     </div>
 
     <button type="submit" name="submit" class="btn btn-primary">Submit</button>
